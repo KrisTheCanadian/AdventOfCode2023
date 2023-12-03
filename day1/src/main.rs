@@ -7,7 +7,7 @@ fn main() {
 
 fn challenge_two() {
     let file_path = env::current_dir().unwrap().join("day1/src/input2.txt");
-    let mut input_lines: Vec<String> = read_input(file_path.to_str().unwrap());
+    let input_lines: Vec<String> = read_input(file_path.to_str().unwrap());
     let mut parsed_lines: Vec<String> = Vec::new();
 
     for line in input_lines {

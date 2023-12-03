@@ -174,5 +174,3 @@ fn parse_cube_string(cube_string: String) -> Cube {
         count: number_string.parse::<i32>().unwrap(),
     };
 }
-
-
