@@ -1,6 +1,7 @@
 use std::{env, fs};
+use std::collections::{HashMap, VecDeque};
 
-
+#[derive(Clone)]
 struct Card {
     number: i32,
     winnings: Vec<i32>,
@@ -10,14 +11,40 @@ struct Card {
 }
 
 fn main() {
-    part1();
+    let cards: Vec<Card> = get_cards("day4/src/input.txt");
+    part1(&cards);
+    part2(cards);
 }
 
-fn part1() {
-    let cards: Vec<Card> = get_cards("day4/src/input.txt");
+fn part1(cards: &[Card]) {
     // get the sum of all the totals
     let total: i32 = cards.iter().map(|x| x.total).sum();
     println!("Total: {}", total);
+}
+
+fn part2(cards: Vec<Card>) {
+    let mut deck: VecDeque<Card> = VecDeque::new();
+    deck.extend(cards.clone());
+
+    let mut card_counts: HashMap<i32, i32> = HashMap::new();
+
+    while let Some(current_card) = deck.pop_front() {
+        let number_of_wins = current_card.actual_winnings.len();
+
+
+        let count = card_counts.entry(current_card.number).or_insert(0);
+        *count += 1;
+
+        for i in 0..number_of_wins {
+            if let Some(deck_card) = cards.iter().nth(current_card.number as usize + i).cloned() {
+                deck.push_back(deck_card);
+            } else {
+                break;
+            }
+        }
+    }
+
+    println!("Total cards: {}", card_counts.values().sum::<i32>());
 }
 
 fn get_cards(file_path: &str) -> Vec<Card> {
@@ -62,11 +89,7 @@ fn get_cards(file_path: &str) -> Vec<Card> {
 fn calculate_points(winnings: &Vec<i32>, actual: &Vec<i32>) -> (i32, Vec<i32>) {
     // get all numbers that are in both winnings and actual
     let mut actual_winnings: Vec<i32> = Vec::new();
-    for number in winnings {
-        if actual.contains(&number) {
-            actual_winnings.push(*number);
-        }
-    }
+    calculate_actual_winnings(winnings, actual, &mut actual_winnings);
 
     let mut total_wins = actual_winnings.len() as i32;
 
@@ -86,4 +109,12 @@ fn calculate_points(winnings: &Vec<i32>, actual: &Vec<i32>) -> (i32, Vec<i32>) {
     }
 
     return (total_wins, actual_winnings);
+}
+
+fn calculate_actual_winnings(winnings: &Vec<i32>, actual: &Vec<i32>, actual_winnings: &mut Vec<i32>) {
+    for number in winnings {
+        if actual.contains(&number) {
+            actual_winnings.push(*number);
+        }
+    }
 }
