@@ -4,8 +4,6 @@ use std::collections::{HashMap, VecDeque};
 #[derive(Clone)]
 struct Card {
     number: i32,
-    winnings: Vec<i32>,
-    actual: Vec<i32>,
     actual_winnings: Vec<i32>,
     total: i32,
 }
@@ -75,8 +73,6 @@ fn get_cards(file_path: &str) -> Vec<Card> {
 
         cards.push(Card {
             number,
-            winnings,
-            actual,
             actual_winnings,
             total,
         });
