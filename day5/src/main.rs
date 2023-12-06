@@ -38,26 +38,38 @@ fn part2(lines: &Vec<String>, delimiters: &Vec<&str>) {
     let maps: Vec<Mapping> = get_mappings(&lines, &delimiters);
 
     // use parallel iterator
-    let results: Vec<Vec<i64>> = pairs.par_iter().map(|pair| {
-        println!("Starting a vector of seeds...");
-        let a = pair.0;
-        let b = pair.1;
-        // create the seeds vector
-        println!("Creating a vector of seeds...");
-        let seeds = (0..b).into_par_iter()
-            .map(|i| a + i)
-            .collect::<Vec<i64>>();
-        println!("Finished a vector of seeds...");
-
-        let locations: Vec<Vec<i64>> = get_locations_from_seed(&maps, &seeds);
-        println!("Finished a vector of seeds...");
-        // return the last vector
-        locations[locations.len() - 1].to_vec()
+    let results: Vec<i64> = pairs.into_par_iter().map(|pair| {
+        get_location_from_seed_pairs(&maps, pair)
     }).collect();
 
-    // get the smallest number in the last vector
-    let smallest: &i64 = results.iter().flatten().min().unwrap();
+    // Get the smallest number in the results
+    let smallest = results.into_par_iter().min().unwrap();
     println!("Smallest Number: {}", smallest);
+}
+
+fn get_location_from_seed_pairs(maps: &Vec<Mapping>, seed_pair: (i64, i64)) -> i64 {
+    let mut min_value = seed_pair.0;
+    let range = seed_pair.1;
+
+    for s in 0..range {
+        let mut current_value = seed_pair.0 + s;
+        for i in 0..maps.len() {
+            let mapping = &maps[i];
+            for j in 0..mapping.mappings.len() {
+                let mapping_tuple = mapping.mappings[j];
+                if &current_value >= &mapping_tuple.1 && &current_value < &(mapping_tuple.1 + mapping_tuple.2) {
+                    let offset = &current_value - &mapping_tuple.1;
+                    current_value = mapping_tuple.0 + offset;
+                    break;
+                }
+            }
+        }
+        if current_value < min_value {
+            min_value = current_value;
+        }
+    }
+
+    min_value
 }
 
 fn parse_seeds_part2(seeds_string: &String) -> Vec<(i64, i64)> {
@@ -77,14 +89,14 @@ fn part1(lines: &Vec<String>, delimiters: &Vec<&str>) {
 
     // get all the numbers
     let maps: Vec<Mapping> = get_mappings(&lines, &delimiters);
-    let locations: Vec<Vec<i64>> = get_locations_from_seed(&maps, &seeds);
+    let locations: Vec<Vec<i64>> = get_locations_from_seeds(&maps, &seeds);
 
     // get the smallest number in the last vector
     let smallest: &i64 = locations[locations.len() - 1].iter().min().unwrap();
     println!("Smallest Number: {}", smallest);
 }
 
-fn get_locations_from_seed(maps: &Vec<Mapping>, seeds: &Vec<i64>) -> Vec<Vec<i64>> {
+fn get_locations_from_seeds(maps: &Vec<Mapping>, seeds: &Vec<i64>) -> Vec<Vec<i64>> {
     let mut map_of_maps: Vec<Vec<i64>> = Vec::new();
     let mut current_map: Vec<i64> = seeds.to_vec();
 
