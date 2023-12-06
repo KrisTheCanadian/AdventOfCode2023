@@ -1,17 +1,12 @@
 use std::{env, fs};
+use rayon::iter::ParallelIterator;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator};
 
 struct Mapping {
     mappings: Vec<(i64, i64, i64)>
 }
 
 fn main() {
-    let file = env::current_dir().unwrap().join("day5/src/input.txt");
-    let content = fs::read_to_string(file).expect("Something went wrong reading the file");
-    let lines: Vec<String> = content.split("\r\n").filter(|&line| !line.is_empty()).map(String::from).collect();
-
-    // create seeds vector
-    let seeds: Vec<i64> = parse_seeds(&lines[0]);
-
     // create hashmap seed-to-soil
     let delimiters: Vec<&str> = vec![
         "seed-to-soil",
@@ -23,21 +18,77 @@ fn main() {
         "humidity-to-location"
     ];
 
-    // get all the numbers
-    let maps: Vec<Mapping> = get_mappings(&lines, &delimiters);
-    let locations: Vec<Vec<i64>> = get_locations_from_seed(&maps, &seeds, &delimiters);
+    let file = env::current_dir().unwrap().join("day5/src/input.txt");
+    let content = fs::read_to_string(file).expect("Something went wrong reading the file");
+    let lines: Vec<String> = content.split("\r\n").filter(|&line| !line.is_empty()).map(String::from).collect();
 
-    // get the smallest number in the last vector
-    let smallest: &i64 = locations[locations.len() - 1].iter().min().unwrap();
-    println!("Smallest Number: {}", smallest);
+    // part1(&lines, &delimiters);
+    part2(&lines, &delimiters);
 
     println!("Done!");
 }
 
-fn get_locations_from_seed(maps: &Vec<Mapping>, seeds: &Vec<i64>, delimiters: &Vec<&str>) -> Vec<Vec<i64>> {
+fn part2(lines: &Vec<String>, delimiters: &Vec<&str>) {
+    // create pairs of seeds
+
+    // pair each seeds
+    println!("Pairing seeds...");
+    let pairs: Vec<(i64, i64)> = parse_seeds_part2(&lines[0]);
+    println!("Parsing maps...");
+    let maps: Vec<Mapping> = get_mappings(&lines, &delimiters);
+
+    // use parallel iterator
+    let results: Vec<Vec<i64>> = pairs.par_iter().map(|pair| {
+        println!("Starting a vector of seeds...");
+        let a = pair.0;
+        let b = pair.1;
+        // create the seeds vector
+        println!("Creating a vector of seeds...");
+        let seeds = (0..b).into_par_iter()
+            .map(|i| a + i)
+            .collect::<Vec<i64>>();
+        println!("Finished a vector of seeds...");
+
+        let locations: Vec<Vec<i64>> = get_locations_from_seed(&maps, &seeds);
+        println!("Finished a vector of seeds...");
+        // return the last vector
+        locations[locations.len() - 1].to_vec()
+    }).collect();
+
+    // get the smallest number in the last vector
+    let smallest: &i64 = results.iter().flatten().min().unwrap();
+    println!("Smallest Number: {}", smallest);
+}
+
+fn parse_seeds_part2(seeds_string: &String) -> Vec<(i64, i64)> {
+    let seeds: Vec<i64> = parse_seeds_part1(seeds_string);
+    return seeds.chunks(2).filter_map(|chunk| {
+        if chunk.len() == 2 {
+            Some((chunk[0], chunk[1]))
+        } else {
+            None
+        }
+    }).collect();
+}
+
+fn part1(lines: &Vec<String>, delimiters: &Vec<&str>) {
+// create seeds vector
+    let seeds: Vec<i64> = parse_seeds_part1(&lines[0]);
+
+    // get all the numbers
+    let maps: Vec<Mapping> = get_mappings(&lines, &delimiters);
+    let locations: Vec<Vec<i64>> = get_locations_from_seed(&maps, &seeds);
+
+    // get the smallest number in the last vector
+    let smallest: &i64 = locations[locations.len() - 1].iter().min().unwrap();
+    println!("Smallest Number: {}", smallest);
+}
+
+fn get_locations_from_seed(maps: &Vec<Mapping>, seeds: &Vec<i64>) -> Vec<Vec<i64>> {
     let mut map_of_maps: Vec<Vec<i64>> = Vec::new();
     let mut current_map: Vec<i64> = seeds.to_vec();
 
+    println!("Getting location of seeds...");
     for i in 0..maps.len() {
         let mut new_map: Vec<i64> = Vec::new();
         let mapping = &maps[i];
@@ -48,11 +99,9 @@ fn get_locations_from_seed(maps: &Vec<Mapping>, seeds: &Vec<i64>, delimiters: &V
                 if seed >= &mapping_tuple.1 && seed < &(mapping_tuple.1 + mapping_tuple.2) {
                     let offset = seed - mapping_tuple.1;
                     new_map.push(mapping_tuple.0 + offset);
-                    println!("{} - Mapping Found: {} -> {}, using: {} {} {}", delimiters[i], seed, mapping_tuple.0 + offset, mapping_tuple.0, mapping_tuple.1, mapping_tuple.2);
                     break;
                 }
                 if j == mapping.mappings.len() - 1 {
-                    println!("{} - Default Mapping Used: {} -> {}", delimiters[i], seed, seed);
                     new_map.push(*seed);
                 }
             }
@@ -100,7 +149,7 @@ fn get_mappings(lines: &Vec<String>, delimiters: &Vec<&str>) -> Vec<Mapping> {
 }
 
 // seeds: 79 14 55 13
-fn parse_seeds(seeds_string: &String) -> Vec<i64> {
+fn parse_seeds_part1(seeds_string: &String) -> Vec<i64> {
     println!("Parsing Seeds...");
     let mut seeds: Vec<i64> = Vec::new();
     seeds_string.split("seeds:").nth(1).unwrap().split(" ").filter(|&seed| !seed.is_empty()).for_each(|seed| {
