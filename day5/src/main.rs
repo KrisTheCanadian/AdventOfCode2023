@@ -28,6 +28,7 @@ fn main() {
     println!("Done!");
 }
 
+// I wish i knew how to run this on the GPU
 fn part2(lines: &Vec<String>, delimiters: &Vec<&str>) {
     // create pairs of seeds
 
