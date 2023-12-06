@@ -1,6 +1,6 @@
 use std::{env, fs};
 use rayon::iter::ParallelIterator;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator};
+use rayon::iter::{IntoParallelIterator};
 
 struct Mapping {
     mappings: Vec<(i64, i64, i64)>
@@ -22,7 +22,7 @@ fn main() {
     let content = fs::read_to_string(file).expect("Something went wrong reading the file");
     let lines: Vec<String> = content.split("\r\n").filter(|&line| !line.is_empty()).map(String::from).collect();
 
-    // part1(&lines, &delimiters);
+    part1(&lines, &delimiters);
     part2(&lines, &delimiters);
 
     println!("Done!");
