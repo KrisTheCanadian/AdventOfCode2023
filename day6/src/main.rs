@@ -6,12 +6,13 @@ struct Race {
 }
 
 fn main() {
-    part1();
+    // part1();
+    part2();
 }
 
 fn part1() {
     let contents: Vec<String> = read_file("day6/src/input.txt");
-    let races: Vec<Race> = parse_races(&contents);
+    let races: Vec<Race> = parse_races1(&contents);
     let min_times: Vec<(&Race, Vec<i64>)> = calculate_win_hold_times(&races);
 
     // multiply all the lengths of the vectors
@@ -20,12 +21,49 @@ fn part1() {
     println!("Product: {}", product);
 }
 
+fn part2() {
+    let contents: Vec<String> = read_file("day6/src/input.txt");
+    let race: Race = parse_races2(&contents);
+
+    let mut win_hold_times: Vec<i64> = Vec::new();
+    let hold_time = find_hold_time(race.time as f64, race.best_distance as f64).unwrap();
+    let min_time = (hold_time.0 + 0.01).ceil();
+    let max_time = (hold_time.1 - 0.01).ceil();
+
+    println!("min_time: {} max_time: {}", min_time, max_time);
+
+    // get all integers between min and max
+    for i in min_time as i64..max_time as i64 {
+        win_hold_times.push(i);
+    }
+    println!("Number of ways to win: {}", win_hold_times.len());
+}
+
+fn parse_races2(contents: &Vec<String>) -> Race {
+    let time: String = contents[0]
+        .splitn(2, "Time:")
+        .nth(1)
+        .unwrap()
+        .chars()
+        .filter(|c| c.is_numeric()).collect();
+
+    let distance: String = contents[1]
+        .splitn(2, "Distance:")
+        .nth(1)
+        .unwrap()
+        .chars()
+        .filter(|c| c.is_numeric()).collect();
+
+    Race { time: time.parse::<i64>().unwrap(), best_distance: distance.parse::<i64>().unwrap() }
+}
+
 // time:7 distance:9
 fn calculate_win_hold_times(races: &Vec<Race>) -> Vec<(&Race, Vec<i64>)> {
     let mut win_hold_times_per_race: Vec<(&Race, Vec<i64>)> = Vec::new();
 
     for race in races {
         let mut win_hold_times: Vec<i64> = Vec::new();
+        // time t
         // hold time h
         // speed = (1 * h) m/s
         // distance d = (t - h) * (h)
@@ -69,7 +107,7 @@ fn find_hold_time(total_time: f64, distance: f64) -> Option<(f64, f64)> {
     }
 }
 
-fn parse_races(contents: &Vec<String>) -> Vec<Race> {
+fn parse_races1(contents: &Vec<String>) -> Vec<Race> {
     let mut races: Vec<Race> = Vec::new();
     let times: Vec<i64> = contents[0]
         .splitn(2, "Time:")
