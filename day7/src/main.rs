@@ -1,4 +1,4 @@
-mod tests;
+mod part1_tests;
 
 use std::{env, fs};
 use std::collections::HashMap;
