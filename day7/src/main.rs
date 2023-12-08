@@ -56,7 +56,7 @@ impl NextEnum for HandType {
 fn main() {
     let lines: Vec<String> = read_file("day7/src/input.txt");
 
-    // part1(&lines);
+    part1(&lines);
     part2(&lines);
 }
 
