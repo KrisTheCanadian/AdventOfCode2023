@@ -2,7 +2,20 @@ use std::{env, fs};
 use std::collections::VecDeque;
 
 fn main() {
-    part1();
+    // part1();
+    part2();
+}
+
+fn part2() {
+    let inputs: VecDeque<VecDeque<i32>> = read_file("day9/src/input.txt");
+    let mut answer = 0;
+    for input in inputs {
+        let mut setup: VecDeque<VecDeque<i32>> = generate_setup(&input);
+        generate_backwards_extrapolation(&mut setup);
+        // add the first row first number to the answer
+        answer += setup[0][0];
+    }
+    println!("Answer: {}", answer);
 }
 
 fn part1() {
@@ -17,8 +30,23 @@ fn part1() {
     println!("Answer: {}", answer);
 }
 
+fn generate_backwards_extrapolation(rows: &mut VecDeque<VecDeque<i32>>) {
+    let mut previous_row_first_number = 0;
+    for (index, row) in rows.iter_mut().rev().enumerate() {
+        let first_number = row[0];
+        if index == 0 {
+            row.push_front(first_number);
+            continue;
+        }
+
+        let new_number = first_number - previous_row_first_number ;
+        previous_row_first_number = new_number;
+        // row push back last number
+        row.push_front(new_number);
+    }
+}
+
 fn generate_extrapolation(rows: &mut VecDeque<VecDeque<i32>>) {
-    // add extra number to the end of each row
     let mut previous_row_last_number = 0;
     for row in rows.iter_mut().rev() {
         let last_number = row[row.len() - 1];
