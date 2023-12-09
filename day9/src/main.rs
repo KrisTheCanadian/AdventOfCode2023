@@ -2,7 +2,7 @@ use std::{env, fs};
 use std::collections::VecDeque;
 
 fn main() {
-    // part1();
+    part1();
     part2();
 }
 
