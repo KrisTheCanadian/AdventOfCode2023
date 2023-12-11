@@ -86,6 +86,12 @@ fn boundary_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
 
     while queue.len() > 0 {
         let (x, y) = queue.remove(0);
+
+        if map[y][x] == 'I' {
+            map[y][x] = 'O';
+            *sum -= 1;
+        }
+
         let neighbours = get_neighbours(x, y, map);
         for (n_x, n_y) in neighbours {
             if !visited.contains(&(n_x as usize, n_y as usize)) {
