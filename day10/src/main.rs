@@ -11,20 +11,24 @@ enum Direction {
 }
 
 fn main() {
-    let mut map = read_input("day10/src/input.txt");
-    part1(&mut map);
-    // part2(&mut map);
+    part1();
+    part2();
 }
 
-fn part2(mut map: &mut Vec<Vec<char>>) {
+fn part2() {
+    let mut map = read_input("day10/src/input.txt");
+    replace_to_unicode(&mut map);
+    print_map(&map);
     let tiles_inside: i32 = calculate_inside(&mut map);
     println!("Part 2 - Tiles inside: {}", tiles_inside);
     print_map(&map);
     println!();
 }
 
-fn part1(mut map: &mut Vec<Vec<char>>) {
+fn part1() {
+    let mut map = read_input("day10/src/input.txt");
     replace_to_unicode(&mut map);
+    print_map(&map);
     let max = breadth_first_search(&mut map);
     println!("Part 1 - Max: {}", max);
     print_map(&map);
@@ -33,12 +37,69 @@ fn part1(mut map: &mut Vec<Vec<char>>) {
 
 fn calculate_inside(map: &mut Vec<Vec<char>>) -> i32 {
     let mut sum: i32 = 0;
-    let horizontal_collisions = horizontal_trace(map, &mut sum);
-    let vertical_collisions = vertical_trace(map, &mut sum);
-
-    println!("Horizontal collisions: {:?}", horizontal_collisions);
-    println!("Vertical collisions: {:?}", vertical_collisions);
+    horizontal_trace(map, &mut sum);
+    vertical_trace(map, &mut sum);
+    boundary_mutate(map, &mut sum);
     sum
+}
+
+fn boundary_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
+    let rows = map.len();
+    let cols = map[0].len();
+
+    for j in 0..cols {
+        check_and_mutate(map, 0, j, sum);
+        check_and_mutate(map, rows - 1, j, sum);
+    }
+
+    for i in 1..rows - 1 {
+        check_and_mutate(map, i, 0, sum);
+        check_and_mutate(map, i, cols - 1, sum);
+    }
+
+}
+
+fn check_and_mutate(map: &mut Vec<Vec<char>>, i: usize, j: usize, sum: &mut i32) {
+    if  map[i][j] == 'I' {
+        *sum -= 1;
+        map[i][j] = 'O';
+    }
+
+    // Look at neighbors
+    let neighbors = get_neighbors(&map, i, j);
+    for neighbor in neighbors {
+        let (ni, nj) = neighbor;
+        if map[ni][nj] == 'I' {
+            *sum -= 1;
+            map[ni][nj] = 'O';
+        }
+    }
+}
+
+fn get_neighbors(map: &Vec<Vec<char>>, i: usize, j: usize) -> Vec<(usize, usize)> {
+    let mut neighbors = Vec::new();
+
+    let directions = vec![
+        (-1, 0),  // North
+        (-1, 1),  // North East
+        (0, 1),   // East
+        (1, 1),   // South East
+        (1, 0),   // South
+        (1, -1),  // South West
+        (0, -1),  // West
+        (-1, -1), // North West
+    ];
+
+    for dir in directions {
+        let ni = (i as isize + dir.0) as usize;
+        let nj = (j as isize + dir.1) as usize;
+
+        if ni < map.len() && nj < map[0].len() {
+            neighbors.push((ni, nj));
+        }
+    }
+
+    neighbors
 }
 
 
@@ -85,11 +146,19 @@ fn vertical_trace(map: &mut Vec<Vec<char>>, sum: &mut i32) -> Vec<(usize, usize)
 
         for range in &ranges {
             for y in range.0..range.1 {
-                if map[y as usize][x] == '.' {
+                if map[y as usize][x] == '.' || map[y as usize][x] == 'I' {
                     collisions.push((y as usize, x));
-                    map[y as usize][x] = 'I';
-                    *sum += 1;
+                    if map[y as usize][x] == '.' {
+                        map[y as usize][x] = 'I';
+                        *sum += 1;
+                    }
                 }
+            }
+        }
+
+        for y in 0..map.len() {
+            if map[y][x] == '.' {
+                map[y][x] = 'O';
             }
         }
     }
@@ -135,11 +204,17 @@ fn horizontal_trace(map: &mut Vec<Vec<char>>, sum: &mut i32) -> Vec<(usize, usiz
         }
         for range in &ranges {
             for x in range.0..range.1 {
-                if map[y][x as usize] == '.' {
+                if map[y][x as usize] == '.' || map[y][x as usize] == 'I' {
                     collisions.push((y, x as usize));
                     map[y][x as usize] = 'I';
                     *sum += 1;
                 }
+            }
+        }
+
+        for x in 0..map[y].len() {
+            if map[y][x] == '.' {
+                map[y][x] = 'O';
             }
         }
     }
@@ -208,9 +283,7 @@ fn breadth_first_search(map: &mut Vec<Vec<char>>) -> i32 {
             if y > 0 {
                 let neighbour = map[y - 1][x];
                 match neighbour {
-                    '│' => directions.extend(get_direction('│').unwrap()),
-                    '┌' => directions.extend(get_direction('┌').unwrap()),
-                    '┐' => directions.extend(get_direction('┐').unwrap()),
+                    '│' | '┌' | '┐' => directions.push(Direction::North),
                     _ => {},
                 }
             }
@@ -218,9 +291,7 @@ fn breadth_first_search(map: &mut Vec<Vec<char>>) -> i32 {
             if y < map.len() - 1 {
                 let neighbour = map[y + 1][x];
                 match neighbour {
-                    '│' => directions.extend(get_direction('│').unwrap()),
-                    '└' => directions.extend(get_direction('└').unwrap()),
-                    '┘' => directions.extend(get_direction('┘').unwrap()),
+                    '│' | '└' | '┘' => directions.push(Direction::South),
                     _ => {},
                 }
             }
@@ -228,9 +299,7 @@ fn breadth_first_search(map: &mut Vec<Vec<char>>) -> i32 {
             if x > 0 {
                 let neighbour = map[y][x - 1];
                 match neighbour {
-                    '─' => directions.extend(get_direction('─').unwrap()),
-                    '┌' => directions.extend(get_direction('┌').unwrap()),
-                    '└' => directions.extend(get_direction('└').unwrap()),
+                    '─' | '┌' | '└' => directions.push(Direction::West),
                     _ => {},
                 }
             }
@@ -238,9 +307,7 @@ fn breadth_first_search(map: &mut Vec<Vec<char>>) -> i32 {
             if x < map[y].len() - 1 {
                 let neighbour = map[y][x + 1];
                 match neighbour {
-                    '─' => directions.extend(get_direction('─').unwrap()),
-                    '┐' => directions.extend(get_direction('┐').unwrap()),
-                    '┘' => directions.extend(get_direction('┘').unwrap()),
+                    '─' | '┐' | '┘' => directions.push(Direction::East),
                     _ => {},
                 }
             }
