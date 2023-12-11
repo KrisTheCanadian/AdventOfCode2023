@@ -1,3 +1,5 @@
+mod test_part2;
+
 use std::{env, fs};
 use std::collections::VecDeque;
 

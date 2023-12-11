@@ -11,23 +11,153 @@ enum Direction {
 }
 
 fn main() {
-    part1();
-}
-
-fn part1() {
     let mut map = read_input("day10/src/input.txt");
-    remove_all_sevens(&mut map);
-    let max = breadth_first_search(&mut map);
-    print_map(&map);
-    println!("Max: {}", max);
+    part1(&mut map);
+    // part2(&mut map);
 }
 
-fn remove_all_sevens(map: &mut Vec<Vec<char>>) {
+fn part2(mut map: &mut Vec<Vec<char>>) {
+    let tiles_inside: i32 = calculate_inside(&mut map);
+    println!("Part 2 - Tiles inside: {}", tiles_inside);
+    print_map(&map);
+    println!();
+}
+
+fn part1(mut map: &mut Vec<Vec<char>>) {
+    replace_to_unicode(&mut map);
+    let max = breadth_first_search(&mut map);
+    println!("Part 1 - Max: {}", max);
+    print_map(&map);
+    println!();
+}
+
+fn calculate_inside(map: &mut Vec<Vec<char>>) -> i32 {
+    let mut sum: i32 = 0;
+    let horizontal_collisions = horizontal_trace(map, &mut sum);
+    let vertical_collisions = vertical_trace(map, &mut sum);
+
+    println!("Horizontal collisions: {:?}", horizontal_collisions);
+    println!("Vertical collisions: {:?}", vertical_collisions);
+    sum
+}
+
+
+fn is_a_pipe(c: char) -> bool {
+    c == '─' || c == '│' || c == '┌' || c == '┐' || c == '└' || c == '┘'
+}
+
+
+fn vertical_trace(map: &mut Vec<Vec<char>>, sum: &mut i32) -> Vec<(usize, usize)> {
+    let mut collisions: Vec<(usize, usize)> = Vec::new();
+    for x in 0..map[0].len() {
+        let mut ranges: Vec<(i32, i32)> = Vec::new();
+        let mut start: i32 = -1;
+        let mut end: i32 = -1;
+
+        let mut y = 0;
+        while y < map.len() {
+            let c = map[y][x];
+
+            if c.is_digit(10) || is_a_pipe(c) {
+                if start != -1 {
+                    end = y as i32;
+                    ranges.push((start, end));
+                    start = -1;
+                    end = -1;
+                }
+                // continue until next digit
+                for z in y + 1..map.len() {
+                    let c = map[z][x];
+                    if c.is_digit(10) || is_a_pipe(c) {
+                        continue;
+                    } else {
+                        y = z;
+                        break;
+                    }
+                }
+
+                if start == -1 {
+                    start = y as i32;
+                }
+            }
+            y += 1;
+        }
+
+        for range in &ranges {
+            for y in range.0..range.1 {
+                if map[y as usize][x] == '.' {
+                    collisions.push((y as usize, x));
+                    map[y as usize][x] = 'I';
+                    *sum += 1;
+                }
+            }
+        }
+    }
+    collisions
+}
+
+
+fn horizontal_trace(map: &mut Vec<Vec<char>>, sum: &mut i32) -> Vec<(usize, usize)> {
+    let mut collisions: Vec<(usize, usize)> = Vec::new();
+    for y in 0..map.len() {
+        let mut ranges: Vec<(i32, i32)> = Vec::new();
+        let mut start: i32 = -1;
+        let mut end: i32 = -1;
+
+        let mut x = 0;
+        while x < map[y].len() {
+            let c = map[y][x];
+
+            if c.is_digit(10) || is_a_pipe(c) {
+                if start != -1 {
+                    end = x as i32;
+                    ranges.push((start, end));
+                    start = -1;
+                    end = -1;
+                }
+                // continue until next digit
+                for z in x + 1..map[y].len() {
+                    let c = map[y][z];
+                    if c.is_digit(10) || is_a_pipe(c) {
+                        continue;
+                    } else {
+                        x = z;
+                        break;
+                    }
+                }
+
+
+                if start == -1 {
+                    start = x as i32;
+                }
+            }
+            x += 1;
+        }
+        for range in &ranges {
+            for x in range.0..range.1 {
+                if map[y][x as usize] == '.' {
+                    collisions.push((y, x as usize));
+                    map[y][x as usize] = 'I';
+                    *sum += 1;
+                }
+            }
+        }
+    }
+    collisions
+}
+
+fn replace_to_unicode(map: &mut Vec<Vec<char>>) {
 // replace all 7 with <
     for row in map {
         for c in row {
-            if *c == '7' {
-                *c = '<';
+            match c {
+                '-' => *c = '─',
+                '|' => *c = '│',
+                'F' => *c = '┌',
+                '7' => *c = '┐',
+                'L' => *c = '└',
+                'J' => *c = '┘',
+                _ => continue,
             }
         }
     }
@@ -72,36 +202,46 @@ fn breadth_first_search(map: &mut Vec<Vec<char>>) -> i32 {
             continue;
         }
 
-        println!("x: {}, y: {}, char: {}, steps: {}", x, y, c, steps);
-
         if c == 'S' {
             // check neighbours
             // north
             if y > 0 {
                 let neighbour = map[y - 1][x];
-                if neighbour == '|' {
-                    directions.push(Direction::North);
+                match neighbour {
+                    '│' => directions.extend(get_direction('│').unwrap()),
+                    '┌' => directions.extend(get_direction('┌').unwrap()),
+                    '┐' => directions.extend(get_direction('┐').unwrap()),
+                    _ => {},
                 }
             }
             // south
             if y < map.len() - 1 {
                 let neighbour = map[y + 1][x];
-                if neighbour == '|' {
-                    directions.push(Direction::South);
+                match neighbour {
+                    '│' => directions.extend(get_direction('│').unwrap()),
+                    '└' => directions.extend(get_direction('└').unwrap()),
+                    '┘' => directions.extend(get_direction('┘').unwrap()),
+                    _ => {},
                 }
             }
             // west
             if x > 0 {
                 let neighbour = map[y][x - 1];
-                if neighbour == '-' {
-                    directions.push(Direction::West);
+                match neighbour {
+                    '─' => directions.extend(get_direction('─').unwrap()),
+                    '┌' => directions.extend(get_direction('┌').unwrap()),
+                    '└' => directions.extend(get_direction('└').unwrap()),
+                    _ => {},
                 }
             }
             // east
             if x < map[y].len() - 1 {
                 let neighbour = map[y][x + 1];
-                if neighbour == '-' || neighbour == 'J' {
-                    directions.push(Direction::East);
+                match neighbour {
+                    '─' => directions.extend(get_direction('─').unwrap()),
+                    '┐' => directions.extend(get_direction('┐').unwrap()),
+                    '┘' => directions.extend(get_direction('┘').unwrap()),
+                    _ => {},
                 }
             }
             map[y][x] = (steps % 10).to_string().chars().next().unwrap();
@@ -110,11 +250,9 @@ fn breadth_first_search(map: &mut Vec<Vec<char>>) -> i32 {
                 let digit = c.to_digit(10).unwrap();
                 if steps < digit as usize {
                     map[y][x] = (steps % 10).to_string().chars().next().unwrap();
-                    println!("Replaced: {} -> {}", c, map[y][x]);
                 }
             } else {
                 map[y][x] = (steps % 10).to_string().chars().next().unwrap();
-                println!("Replaced: {} -> {}", c, map[y][x]);
             }
             directions = if let Some(d) = get_direction(c) {
                 d
@@ -159,12 +297,12 @@ fn read_input(file_path: &str) -> Vec<Vec<char>> {
 
 fn get_direction(c: char) -> Option<Vec<Direction>> {
     match c {
-        '|' => return Some(vec![Direction::North, Direction::South]),
-        '-' => return Some(vec![Direction::East, Direction::West]),
-        'L' => return Some(vec![Direction::North, Direction::East]),
-        'J' => return Some(vec![Direction::North, Direction::West]),
-        '<' => return Some(vec![Direction::South, Direction::West]),
-        'F' => return Some(vec![Direction::South, Direction::East]),
+        '│' => return Some(vec![Direction::North, Direction::South]),
+        '─' => return Some(vec![Direction::East, Direction::West]),
+        '└' => return Some(vec![Direction::North, Direction::East]),
+        '┘' => return Some(vec![Direction::North, Direction::West]),
+        '┐' => return Some(vec![Direction::South, Direction::West]),
+        '┌' => return Some(vec![Direction::South, Direction::East]),
         '.' => return None,
         'S' => return None,
         _ => if c.is_digit(10) {
