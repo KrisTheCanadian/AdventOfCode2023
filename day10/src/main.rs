@@ -43,68 +43,122 @@ fn calculate_inside(map: &mut Vec<Vec<char>>) -> i32 {
     sum
 }
 
-fn boundary_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
+fn get_border_points(map: &Vec<Vec<char>>) -> Vec<(usize, usize)> {
     let rows = map.len();
     let cols = map[0].len();
+    let mut boundary: Vec<(usize, usize)> = Vec::new();
 
-    for j in 0..cols {
-        check_and_mutate(map, 0, j, sum);
-        check_and_mutate(map, rows - 1, j, sum);
+    for x in 0..cols {
+        if !is_a_pipe(map[0][x]) {
+            boundary.push((x, 0));
+        }
+        if !is_a_pipe(map[rows - 1][x]) {
+            boundary.push((x, rows - 1));
+        }
     }
 
-    for i in 1..rows - 1 {
-        check_and_mutate(map, i, 0, sum);
-        check_and_mutate(map, i, cols - 1, sum);
+    for y in 0..rows {
+        if !is_a_pipe(map[y][0]) {
+            boundary.push((0, y));
+        }
+        if !is_a_pipe(map[y][cols - 1]) {
+            boundary.push((cols - 1, y));
+        }
     }
 
+    boundary
 }
 
-fn check_and_mutate(map: &mut Vec<Vec<char>>, i: usize, j: usize, sum: &mut i32) {
-    if  map[i][j] == 'I' {
-        *sum -= 1;
-        map[i][j] = 'O';
+fn boundary_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
+    // get all boundary points which are not pipes
+    let mut boundary: Vec<(usize, usize)> = get_border_points(map);
+
+    let mut queue: Vec<(usize, usize)> = Vec::new();
+
+    for (x, y) in &boundary {
+        queue.push((*x, *y));
     }
 
-    // Look at neighbors
-    let neighbors = get_neighbors(&map, i, j);
-    for neighbor in neighbors {
-        let (ni, nj) = neighbor;
-        if map[ni][nj] == 'I' {
-            *sum -= 1;
-            map[ni][nj] = 'O';
+    let mut visited: Vec<(usize, usize)> = Vec::new();
+    for (x, y) in boundary {
+        queue.push((x, y));
+    }
+
+    while queue.len() > 0 {
+        let (x, y) = queue.remove(0);
+        let neighbours = get_neighbours(x, y, map);
+        for (n_x, n_y) in neighbours {
+            if !visited.contains(&(n_x as usize, n_y as usize)) {
+                visited.push((n_x as usize, n_y as usize));
+                if map[n_y as usize][n_x as usize] == 'I' {
+                    map[n_y as usize][n_x as usize] = 'O';
+                    *sum -= 1;
+                }
+                queue.push((n_x as usize, n_y as usize));
+            }
         }
     }
 }
 
-fn get_neighbors(map: &Vec<Vec<char>>, i: usize, j: usize) -> Vec<(usize, usize)> {
-    let mut neighbors = Vec::new();
+fn get_neighbours(x: usize, y: usize, map: &Vec<Vec<char>>) -> Vec<(i32, i32)> {
+    let mut neighbours: Vec<(i32, i32)> = Vec::new();
+    let rows = map.len() - 1;
+    let cols = map[0].len() - 1;
 
-    let directions = vec![
-        (-1, 0),  // North
-        (-1, 1),  // North East
-        (0, 1),   // East
-        (1, 1),   // South East
-        (1, 0),   // South
-        (1, -1),  // South West
-        (0, -1),  // West
-        (-1, -1), // North West
-    ];
-
-    for dir in directions {
-        let ni = (i as isize + dir.0) as usize;
-        let nj = (j as isize + dir.1) as usize;
-
-        if ni < map.len() && nj < map[0].len() {
-            neighbors.push((ni, nj));
+    let add = |x: i32, y: i32, neighbors: &mut Vec<(i32, i32)>, rows: usize, cols: usize| {
+        let neighbour = map[y as usize][x as usize];
+        match neighbour {
+            'O' | 'I' => neighbors.push((x, y)),
+            _ => {}
         }
+    };
+
+    // North
+    if y > 0 {
+        add(x as i32, y as i32 - 1, &mut neighbours, rows, cols);
     }
 
-    neighbors
+    // South
+    if y < rows - 1 {
+        add(x as i32, y as i32 + 1, &mut neighbours, rows, cols);
+    }
+
+    // West
+    if x > 0 {
+        add(x as i32 - 1, y as i32, &mut neighbours, rows, cols);
+    }
+
+    // East
+    if x < cols - 1 {
+        add(x as i32 + 1, y as i32, &mut neighbours, rows, cols);
+    }
+
+    // North-West
+    if y > 0 && x > 0 {
+        add(x as i32 - 1, y as i32 - 1, &mut neighbours, rows, cols);
+    }
+
+    // North-East
+    if y > 0 && x < cols - 1 {
+        add(x as i32 + 1, y as i32 - 1, &mut neighbours, rows, cols);
+    }
+
+    // South-West
+    if y < rows - 1 && x > 0 {
+        add(x as i32 - 1, y as i32 + 1, &mut neighbours, rows, cols);
+    }
+
+    // South-East
+    if y < rows - 1 && x < cols - 1 {
+        add(x as i32 + 1, y as i32 + 1, &mut neighbours, rows, cols);
+    }
+
+    neighbours
 }
 
 
 fn is_a_pipe(c: char) -> bool {
-    c == '─' || c == '│' || c == '┌' || c == '┐' || c == '└' || c == '┘'
+    c == '─' || c == '│' || c == '┌' || c == '┐' || c == '└' || c == '┘' || c == 'S'
 }
 
 
