@@ -1,8 +1,6 @@
-use itertools::{Itertools, repeat_n};
-
 fn main() {
-    // part1();
-    part2();
+    part1();
+    // part2();
 }
 
 fn part2() {
@@ -47,79 +45,82 @@ fn part1() {
 fn bruteforce(springs_and_numbers: &mut Vec<(Vec<char>, Vec<i32>)>, sum: &mut usize) {
     for i in 0..springs_and_numbers.len() {
         let current_numbers = &springs_and_numbers[i].1;
-        let number_of_required_damage_springs: i32 = springs_and_numbers[i].1.iter().sum();
-        // 1, 1, 3
-        // # -> 5
-        // . -> 3
-        // ???.###
+        let mut current_perm = Vec::new();
+        *sum += generate_and_count_permutations(&springs_and_numbers[i].0, current_numbers, 0, &mut current_perm);
+    }
+}
 
-        // calculate permutations (probably a better way to do this...)
-        let mut permutations: Vec<Vec<&char>> = repeat_n(['#', '.'].iter(), springs_and_numbers[i].0.len()).multi_cartesian_product().collect();
-
-        // remove permutations that don't match the required number of damaged springs
-        permutations.retain(|p| p.iter().filter(|&c| **c == '#').count() == number_of_required_damage_springs as usize);
-
-        permutations.retain(|p| {
-            let mut sequence_matches = true;
-            for j in 0..p.len() {
-                if springs_and_numbers[i].0[j] == '?' {
-                    continue;
-                }
-                if springs_and_numbers[i].0[j] != *p[j] {
-                    sequence_matches = false;
-                    break;
+fn is_valid_permutation(perm: &[char], current_numbers: &[i32], springs: &[char]) -> bool {
+    let mut groups: Vec<i32> = Vec::new();
+    let mut group_size = 0;
+    for c in perm {
+        match *c {
+            '#' => { group_size += 1; }
+            '.' => {
+                if group_size > 0 {
+                    groups.push(group_size);
+                    group_size = 0;
                 }
             }
-            sequence_matches
-        });
-
-        // calculate the groups for each permutation
-        let mut permutations_groups: Vec<(&Vec<&char>, Vec<i32>)> = Vec::new();
-        for p in &permutations {
-            let mut groups: Vec<i32> = Vec::new();
-            let mut group_size = 0;
-            for c in p {
-                match **c {
-                    '#' => { group_size += 1; }
-                    '.' => {
-                        if group_size > 0 {
-                            groups.push(group_size);
-                            group_size = 0;
-                        }
-                    }
-                    _ => {}
-                }
-
-                if groups.len() > current_numbers.len() {
-                    groups.clear();
-                    break;
-                }
-            }
-
-            if group_size > 0 {
-                groups.push(group_size);
-            }
-
-            permutations_groups.push((p, groups));
+            _ => {}
         }
 
-        // remove permutations that don't match the vector numbers
-        permutations_groups.retain(|p| {
-            let mut match_numbers = true;
-            if p.1.len() != current_numbers.len() {
-                match_numbers = false;
-            }
-            for i in 0..p.1.len() {
-                if p.1[i] != current_numbers[i] {
-                    match_numbers = false;
-                    break;
-                }
-            }
-
-            match_numbers
-        });
-        *sum += permutations_groups.len();
+        if groups.len() > current_numbers.len() {
+            return false;
+        }
     }
+
+    if group_size > 0 {
+        groups.push(group_size);
+    }
+
+    if groups.len() != current_numbers.len() {
+        return false;
+    }
+
+    for i in 0..groups.len() {
+        if groups[i] != current_numbers[i] {
+            return false;
+        }
+    }
+
+    for i in 0..springs.len() {
+        if springs[i] != '?' && springs[i] != perm[i] {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn generate_and_count_permutations(springs: &[char], groups: &[i32], index: usize, current_perm: &mut Vec<char>) -> usize {
+    if index == springs.len() {
+        return if is_valid_permutation(current_perm, groups, springs) { 1 } else { 0 };
+    }
+
+    let mut count = 0;
+
+    match springs[index] {
+        '?' => {
+            // Replace '?' with '#'
+            current_perm.push('#');
+            count += generate_and_count_permutations(springs, groups, index + 1, current_perm);
+            current_perm.pop();
+
+            // Replace '?' with '.'
+            current_perm.push('.');
+            count += generate_and_count_permutations(springs, groups, index + 1, current_perm);
+            current_perm.pop();
+        },
+        _ => {
+            // Keep the current character
+            current_perm.push(springs[index]);
+            count += generate_and_count_permutations(springs, groups, index + 1, current_perm);
+            current_perm.pop();
+        }
+    }
+
+    count
 }
 
 fn expand_springs(springs: &[char], times: usize) -> Vec<char> {
