@@ -1,4 +1,5 @@
 use std::{env, fs};
+use colored::Colorize;
 
 #[derive(PartialEq)]
 #[derive(Debug)]
@@ -9,24 +10,67 @@ enum Direction {
     East,
     West,
 }
-
 fn main() {
-    part1();
-    part2();
+    let mut map = read_input("day10/src/input.txt");
+    part1(&mut map);
+    part2(&mut map);
 }
 
-fn part2() {
-    let mut map = read_input("day10/src/input.txt");
-    replace_to_unicode(&mut map);
+fn part2(mut map: &mut Vec<Vec<char>>) {
+    println!("Part 2 - Calculate inside");
     print_map(&map);
+    // remove all random pipes and turn them to dirt
+    turn_useless_pipes_to_dirt(&mut map);
+    println!("Turning useless pipes to dirt");
+    print_map(&map);
+
+    // get all coordinates of map that are digits or 'S'
+    let mut coordinates: Vec<(f64, f64)> = Vec::new();
+    for y in 0..map.len() {
+        for x in 0..map[y].len() {
+            let c = map[y][x];
+            if c.is_digit(10) || c == 'S' {
+                coordinates.push((x as f64, y as f64));
+            }
+        }
+    }
+
+    // recover the map for every non-dirty
+    recover_map(&mut map);
+    replace_to_unicode(&mut map);
+
+    println!("Recovering map");
+    print_map(&map);
+
     let tiles_inside: i32 = calculate_inside(&mut map);
     println!("Part 2 - Tiles inside: {}", tiles_inside);
     print_map(&map);
     println!();
 }
 
-fn part1() {
-    let mut map = read_input("day10/src/input.txt");
+fn recover_map(map: &mut &mut Vec<Vec<char>>) {
+    let new_map = read_input("day10/src/input.txt");
+    for y in 0..map.len() {
+        for x in 0..map[y].len() {
+            let c = map[y][x];
+            if c.is_digit(10) {
+                map[y][x] = new_map[y][x];
+            }
+        }
+    }
+}
+
+fn turn_useless_pipes_to_dirt(map: &mut Vec<Vec<char>>) {
+    for row in map {
+        for c in row {
+            if is_a_pipe(*c) {
+                *c = '.';
+            }
+        }
+    }
+}
+
+fn part1(mut map: &mut Vec<Vec<char>>) {
     replace_to_unicode(&mut map);
     print_map(&map);
     let max = breadth_first_search(&mut map);
@@ -37,10 +81,49 @@ fn part1() {
 
 fn calculate_inside(map: &mut Vec<Vec<char>>) -> i32 {
     let mut sum: i32 = 0;
-    horizontal_trace(map, &mut sum);
-    vertical_trace(map, &mut sum);
+
+    print_map(&map);
+
     boundary_mutate(map, &mut sum);
+    inside_mutate(map, &mut sum);
+
     sum
+}
+
+fn inside_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
+    // get each I
+    let mut queue: Vec<(usize, usize)> = Vec::new();
+    let mut visited: Vec<(usize, usize)> = Vec::new();
+
+    for y in 0..map.len() {
+        for x in 0..map[y].len() {
+            if map[y][x] == 'I' {
+                queue.push((x, y));
+            }
+        }
+    }
+
+    while queue.len() > 0 {
+        let (x, y) = queue.remove(0);
+
+        if visited.contains(&(x, y)) {
+            continue;
+        }
+
+        visited.push((x, y));
+        let neighbours = get_neighbours(x, y, map);
+        for (n_x, n_y) in neighbours {
+            if !visited.contains(&(n_x as usize, n_y as usize)) {
+                visited.push((n_x as usize, n_y as usize));
+                if map[n_y as usize][n_x as usize] == 'O' || map[n_y as usize][n_x as usize] == '.' {
+                    map[n_y as usize][n_x as usize] = 'I';
+                    *sum += 1;
+                }
+                queue.push((n_x as usize, n_y as usize));
+            }
+        }
+    }
+
 }
 
 fn get_border_points(map: &Vec<Vec<char>>) -> Vec<(usize, usize)> {
@@ -71,7 +154,7 @@ fn get_border_points(map: &Vec<Vec<char>>) -> Vec<(usize, usize)> {
 
 fn boundary_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
     // get all boundary points which are not pipes
-    let mut boundary: Vec<(usize, usize)> = get_border_points(map);
+    let boundary: Vec<(usize, usize)> = get_border_points(map);
 
     let mut queue: Vec<(usize, usize)> = Vec::new();
 
@@ -90,6 +173,8 @@ fn boundary_mutate(map: &mut Vec<Vec<char>>, sum: &mut i32) {
         if map[y][x] == 'I' {
             map[y][x] = 'O';
             *sum -= 1;
+        } else if map[y][x] == '.' {
+            map[y][x] = 'O';
         }
 
         let neighbours = get_neighbours(x, y, map);
@@ -111,10 +196,10 @@ fn get_neighbours(x: usize, y: usize, map: &Vec<Vec<char>>) -> Vec<(i32, i32)> {
     let rows = map.len() - 1;
     let cols = map[0].len() - 1;
 
-    let add = |x: i32, y: i32, neighbors: &mut Vec<(i32, i32)>, rows: usize, cols: usize| {
+    let add = |x: i32, y: i32, neighbors: &mut Vec<(i32, i32)>, _rows: usize, _cols: usize| {
         let neighbour = map[y as usize][x as usize];
         match neighbour {
-            'O' | 'I' => neighbors.push((x, y)),
+            'O' | 'I' | '.' => neighbors.push((x, y)),
             _ => {}
         }
     };
@@ -162,123 +247,8 @@ fn get_neighbours(x: usize, y: usize, map: &Vec<Vec<char>>) -> Vec<(i32, i32)> {
     neighbours
 }
 
-
 fn is_a_pipe(c: char) -> bool {
     c == '─' || c == '│' || c == '┌' || c == '┐' || c == '└' || c == '┘' || c == 'S'
-}
-
-
-fn vertical_trace(map: &mut Vec<Vec<char>>, sum: &mut i32) -> Vec<(usize, usize)> {
-    let mut collisions: Vec<(usize, usize)> = Vec::new();
-    for x in 0..map[0].len() {
-        let mut ranges: Vec<(i32, i32)> = Vec::new();
-        let mut start: i32 = -1;
-        let mut end: i32 = -1;
-
-        let mut y = 0;
-        while y < map.len() {
-            let c = map[y][x];
-
-            if c.is_digit(10) || is_a_pipe(c) {
-                if start != -1 {
-                    end = y as i32;
-                    ranges.push((start, end));
-                    start = -1;
-                    end = -1;
-                }
-                // continue until next digit
-                for z in y + 1..map.len() {
-                    let c = map[z][x];
-                    if c.is_digit(10) || is_a_pipe(c) {
-                        continue;
-                    } else {
-                        y = z;
-                        break;
-                    }
-                }
-
-                if start == -1 {
-                    start = y as i32;
-                }
-            }
-            y += 1;
-        }
-
-        for range in &ranges {
-            for y in range.0..range.1 {
-                if map[y as usize][x] == '.' || map[y as usize][x] == 'I' {
-                    collisions.push((y as usize, x));
-                    if map[y as usize][x] == '.' {
-                        map[y as usize][x] = 'I';
-                        *sum += 1;
-                    }
-                }
-            }
-        }
-
-        for y in 0..map.len() {
-            if map[y][x] == '.' {
-                map[y][x] = 'O';
-            }
-        }
-    }
-    collisions
-}
-
-
-fn horizontal_trace(map: &mut Vec<Vec<char>>, sum: &mut i32) -> Vec<(usize, usize)> {
-    let mut collisions: Vec<(usize, usize)> = Vec::new();
-    for y in 0..map.len() {
-        let mut ranges: Vec<(i32, i32)> = Vec::new();
-        let mut start: i32 = -1;
-        let mut end: i32 = -1;
-
-        let mut x = 0;
-        while x < map[y].len() {
-            let c = map[y][x];
-
-            if c.is_digit(10) || is_a_pipe(c) {
-                if start != -1 {
-                    end = x as i32;
-                    ranges.push((start, end));
-                    start = -1;
-                    end = -1;
-                }
-                // continue until next digit
-                for z in x + 1..map[y].len() {
-                    let c = map[y][z];
-                    if c.is_digit(10) || is_a_pipe(c) {
-                        continue;
-                    } else {
-                        x = z;
-                        break;
-                    }
-                }
-
-
-                if start == -1 {
-                    start = x as i32;
-                }
-            }
-            x += 1;
-        }
-        for range in &ranges {
-            for x in range.0..range.1 {
-                if map[y][x as usize] == '.' || map[y][x as usize] == 'I' {
-                    collisions.push((y, x as usize));
-                    map[y][x as usize] = 'I';
-                    *sum += 1;
-                }
-            }
-        }
-
-        for x in 0..map[y].len() {
-            if map[y][x] == '.' {
-                map[y][x] = 'O';
-            }
-        }
-    }
-    collisions
 }
 
 fn replace_to_unicode(map: &mut Vec<Vec<char>>) {
@@ -301,7 +271,13 @@ fn replace_to_unicode(map: &mut Vec<Vec<char>>) {
 fn print_map(map: &Vec<Vec<char>>) {
     for row in map {
         for c in row {
-            print!("{}", c);
+            match c {
+                'O' => print!("{}", c.to_string().italic().blue()),
+                'I' => print!("{}", c.to_string().bold().red()),
+                'S' => print!("{}", c.to_string().italic().yellow()),
+                '.' => print!("{}", c.to_string().italic().white()),
+                &_ => { print!("{}", c); },
+            }
         }
         println!();
     }
