@@ -10,7 +10,6 @@ enum Symmetry {
 
 fn main() {
     let input = include_str!("input.txt");
-
     part1(&input);
 }
 
@@ -51,19 +50,17 @@ fn part1(input: &str) {
 
 // always start after first column/row
 fn find_symmetric_point(puzzle: &Puzzle) -> (usize, Symmetry) {
-    let row_max = puzzle.matrix.len();
-
     // perform column vertical checks
 
     // keep track of which columns we're checking
-    let mut col_sym_pt = check_columns_symmetry(puzzle);
+    let col_sym_pt = check_columns_symmetry(puzzle);
     // print col if found
     if let Some(p1) = col_sym_pt {
         println!("Vertical symmetry found at {} and {}", p1, p1 + 1);
         return (p1, Symmetry::Vertical);
     }
 
-    let mut row_sym_pt = check_rows_symmetry(puzzle);
+    let row_sym_pt = check_rows_symmetry(puzzle);
 
     if let Some(p1) = row_sym_pt {
         println!("Horizontal symmetry found at {} and {}", p1, p1 + 1);
@@ -80,7 +77,7 @@ fn check_rows_symmetry(puzzle: &Puzzle) -> Option<usize> {
     while p1_index + 1 < row_max {
         let mut p1 = p1_index;
         let mut p2 = p1 + 1;
-        while p1 >= 0 && p2 < row_max {
+        while p2 < row_max {
             if !rows_match(p1, p2, puzzle) {
                 // this isn't the point of in
                 break;
@@ -116,7 +113,7 @@ fn check_columns_symmetry(puzzle: &Puzzle) -> Option<usize> {
     while p1_index + 1 < col_max {
         let mut p1 = p1_index;
         let mut p2 = p1 + 1;
-        while p1 >= 0 && p2 < col_max {
+        while p2 < col_max {
             if !columns_match(p1, p2, puzzle) {
                 // this isn't the point of in
                 break;
