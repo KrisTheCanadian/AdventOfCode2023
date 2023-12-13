@@ -11,7 +11,7 @@ enum Symmetry {
 
 fn main() {
     let input = include_str!("input.txt");
-    part1(&input);
+    // part1(&input);
     part2(&input);
 }
 
@@ -42,39 +42,50 @@ fn part2(input: &str) {
     println!("Total: {}", vertical_line_reflection_sum + (horizontal_line_reflection_sum * 100))
 }
 
+fn print_puzzle(puzzle: &Puzzle) {
+    for row in &puzzle.matrix {
+        for col in row {
+            print!("{}", col);
+        }
+        println!();
+    }
+}
+
 fn find_symmetric_point_2(puzzle: &Puzzle) -> (usize, Symmetry) {
     let mut symmetric_points: Vec<(usize, Symmetry, usize)> = Vec::new();
 
     // keep track of which columns we're checking
     let col_sym_pt = check_columns_symmetry_2(puzzle);
     // print col if found
-    if let Some((p1, mismatch_count)) = col_sym_pt {
-        println!("Vertical symmetry found at {} and {}", p1, p1 + 1);
-        symmetric_points.push((p1, Symmetry::Vertical, mismatch_count));
+    let col_sym = col_sym_pt;
+    for col in col_sym {
+        println!("Vertical symmetry found at {} and {}", col.0, col.0 + 1);
+        symmetric_points.push((col.0, Symmetry::Vertical, col.1));
     }
+
 
     let row_sym_pt = check_rows_symmetry_2(puzzle);
 
-    if let Some((p1, mismatch_count)) = row_sym_pt {
-        println!("Horizontal symmetry found at {} and {}", p1, p1 + 1);
-        symmetric_points.push((p1, Symmetry::Horizontal, mismatch_count));
+    let row_sym = row_sym_pt;
+    for row in row_sym {
+        println!("Horizontal symmetry found at {} and {}", row.0, row.0 + 1);
+        symmetric_points.push((row.0, Symmetry::Horizontal, row.1));
     }
 
-    if symmetric_points.len() > 1 {
-        // return the point with 1 mismatch
-        for (p1, sym_type, mismatch_count) in &symmetric_points {
-            if *mismatch_count == 1 {
-                return (*p1, sym_type.clone());
-            }
+
+    for (p1, sym_type, mismatch_count) in &symmetric_points {
+        if *mismatch_count == 1 {
+            return (*p1, sym_type.clone());
         }
     }
 
-    return (symmetric_points[0].0, symmetric_points[0].1.clone());
+    panic!("No symmetry found");
 }
 
-fn check_rows_symmetry_2(puzzle: &Puzzle) -> Option<(usize, usize)> {
+fn check_rows_symmetry_2(puzzle: &Puzzle) -> Vec<(usize, usize)> {
     let mut p1_index = 0;
     let row_max = puzzle.matrix.len();
+    let mut symmetric_points: Vec<(usize, usize)> = Vec::new();
 
     while p1_index + 1 < row_max {
         let mut p1 = p1_index;
@@ -90,7 +101,8 @@ fn check_rows_symmetry_2(puzzle: &Puzzle) -> Option<(usize, usize)> {
             }
 
             if p1 == 0 || p2 == row_max - 1 {
-                return Some((p1_index, mismatch_count as usize));
+                symmetric_points.push((p1_index, mismatch_count as usize));
+                break;
             }
 
             // move p1 left and move p2 right
@@ -100,7 +112,7 @@ fn check_rows_symmetry_2(puzzle: &Puzzle) -> Option<(usize, usize)> {
 
         p1_index += 1;
     }
-    None
+    symmetric_points
 }
 
 fn rows_match_2(p1: usize, p2: usize, puzzle: &Puzzle) -> (bool, i32) {
@@ -117,9 +129,10 @@ fn rows_match_2(p1: usize, p2: usize, puzzle: &Puzzle) -> (bool, i32) {
     (true, mismatch_count)
 }
 
-fn check_columns_symmetry_2(puzzle: &Puzzle) -> Option<(usize, usize)> {
+fn check_columns_symmetry_2(puzzle: &Puzzle) -> Vec<(usize, usize)> {
     let mut p1_index = 0;
     let col_max = puzzle.matrix[0].len();
+    let mut symmetric_points: Vec<(usize, usize)> = Vec::new();
 
     while p1_index + 1 < col_max {
         let mut p1 = p1_index;
@@ -131,12 +144,12 @@ fn check_columns_symmetry_2(puzzle: &Puzzle) -> Option<(usize, usize)> {
             mismatch_count += mismatch;
 
             if !cols_match || mismatch_count > 1 {
-                // this isn't the point of in
                 break;
             }
 
             if p1 == 0 || p2 == col_max - 1 {
-                return Some((p1_index, mismatch_count as usize));
+                symmetric_points.push((p1_index, mismatch_count as usize));
+                break;
             }
 
             // move p1 left and move p2 right
@@ -146,7 +159,7 @@ fn check_columns_symmetry_2(puzzle: &Puzzle) -> Option<(usize, usize)> {
 
         p1_index += 1;
     }
-    None
+    symmetric_points
 }
 
 fn columns_match_2(p1: usize, p2: usize, puzzle: &Puzzle) -> (bool, i32) {
