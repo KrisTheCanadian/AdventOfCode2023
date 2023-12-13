@@ -1,6 +1,8 @@
+use rayon::prelude::*;
+
 fn main() {
     part1();
-    // part2();
+    part2();
 }
 
 fn part2() {
@@ -43,11 +45,13 @@ fn part1() {
 }
 
 fn bruteforce(springs_and_numbers: &mut Vec<(Vec<char>, Vec<i32>)>, sum: &mut usize) {
-    for i in 0..springs_and_numbers.len() {
-        let current_numbers = &springs_and_numbers[i].1;
-        let mut current_perm = Vec::new();
-        *sum += generate_and_count_permutations(&springs_and_numbers[i].0, current_numbers, 0, &mut current_perm);
-    }
+    *sum = springs_and_numbers.par_iter()
+        .map(|(springs, numbers)| {
+            println!("Processing: {}", springs.iter().collect::<String>());
+            let mut current_perm = Vec::new();
+            generate_and_count_permutations(springs, numbers, 0, &mut current_perm)
+        })
+        .sum();
 }
 
 fn is_valid_permutation(perm: &[char], current_numbers: &[i32], springs: &[char]) -> bool {
@@ -94,6 +98,13 @@ fn is_valid_permutation(perm: &[char], current_numbers: &[i32], springs: &[char]
 }
 
 fn generate_and_count_permutations(springs: &[char], groups: &[i32], index: usize, current_perm: &mut Vec<char>) -> usize {
+
+    // count the number of '#' in the current permutation
+    let damaged_springs = springs.iter().filter(|c| **c == '#').count();
+    if damaged_springs > groups.iter().sum::<i32>() as usize {
+        return 0;
+    }
+
     if index == springs.len() {
         return if is_valid_permutation(current_perm, groups, springs) { 1 } else { 0 };
     }
@@ -131,7 +142,7 @@ fn expand_springs(springs: &[char], times: usize) -> Vec<char> {
             expanded.push('?');
         }
     }
-    expanded.pop(); // Remove the last '?' added
+    expanded.pop();
     expanded
 }
 
