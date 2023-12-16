@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 fn main() {
     part1();
+    part2();
 }
 
 #[derive(Clone)]
@@ -21,15 +22,198 @@ struct Beam {
     position: (usize, usize),
 }
 
+fn part2() {
+    let matrix = read_input();
+    print_matrix(&matrix);
+    let mut max = 0;
+
+
+    // for any top row starting beam
+    // down
+    for col in 0..matrix[0].len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Down,
+            position: (0, col),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("top row starting beam going down: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // left
+    for row in 0..matrix.len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Left,
+            position: (row, 0),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("left column starting beam going right: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // right
+    for row in 0..matrix.len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Right,
+            position: (row, matrix[0].len() - 1),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("right column starting beam going left: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // for any bottom row starting beam
+    // up
+    for col in 0..matrix[0].len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Up,
+            position: (matrix.len() - 1, col),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("bottom row starting beam going up: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // right
+    for row in 0..matrix.len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Right,
+            position: (row, matrix[0].len() - 1),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("right column starting beam going left: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // left
+    for row in 0..matrix.len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Left,
+            position: (row, 0),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("left column starting beam going right: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // for any left column starting beam
+    // right
+    for row in 0..matrix.len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Right,
+            position: (row, 0),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("left column starting beam going right: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // up
+    for col in 0..matrix[0].len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Up,
+            position: (matrix.len() - 1, col),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("bottom row starting beam going up: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // down
+    for col in 0..matrix[0].len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Down,
+            position: (0, col),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("top row starting beam going down: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // for any right column starting beam
+    // left
+    for row in 0..matrix.len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Left,
+            position: (row, matrix[0].len() - 1),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("right column starting beam going left: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // up
+    for col in 0..matrix[0].len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Up,
+            position: (matrix.len() - 1, col),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("bottom row starting beam going up: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+    // down
+    for col in 0..matrix[0].len() {
+        let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+        let beam = Beam {
+            direction: Direction::Down,
+            position: (0, col),
+        };
+        trace_beams(&matrix, beam, &mut energized_tiles);
+        println!("top row starting beam going down: Energized Tiles: {}", energized_tiles.len());
+        if energized_tiles.len() > max {
+            max = energized_tiles.len();
+        }
+    }
+
+
+    println!("Part 2: {}", max);
+}
+
 fn part1() {
     let matrix = read_input();
     print_matrix(&matrix);
+    let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
+
     // top left beam going right
     let beam = Beam {
         direction: Direction::Right,
         position: (0, 0),
     };
-    let mut energized_tiles: HashMap<(usize, usize), Vec<Direction>> = HashMap::new();
     trace_beams(&matrix, beam, &mut energized_tiles);
 
     println!("Part 1: {}", energized_tiles.len());
@@ -39,9 +223,6 @@ fn trace_beams(matrix: &Vec<Vec<char>>, initial_beam: Beam, visited: &mut HashMa
     let mut stack = vec![initial_beam];
 
     while let Some(beam) = stack.pop() {
-        println!("Processing Beam: {:?}", beam);
-        println!("Visited Length: {:?}", visited.len());
-
         // Same bounds and visited checks as before
         if beam.position.0 >= matrix.len() || beam.position.1 >= matrix[0].len() {
             continue;
